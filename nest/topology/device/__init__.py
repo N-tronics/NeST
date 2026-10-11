@@ -9,3 +9,4 @@ in Linux, for eg., Veth, Ifb
 from .device import Device
 from .ifb import Ifb
 from .veth_end import VethEnd
+from .vlan_end import VlanEnd
