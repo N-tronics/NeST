@@ -44,11 +44,11 @@ class Router(Node):
             name of the subinterface, if None, set to parent_interface.vlan_id
         """
         if name is None:
-            name = f"{interface.name}.{vlan_id}"
-
-        engine.create_vlan_subinterface(self.id, interface, name, vlan_id)
+            name = f"{interface.id}.{vlan_id}"
 
         dev = VlanEnd(name, self.id)
+        engine.create_vlan_subinterface(self.id, interface, dev.id, vlan_id)
+
         vlan_if = BaseInterface(name, dev)
         vlan_if.set_mode("UP")
 
