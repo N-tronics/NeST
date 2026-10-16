@@ -31,14 +31,22 @@ class Router(Node):
         super().__init__(name)
         self.enable_ip_forwarding()
 
-    def _create_vlan_subif(
-        self, interface: BaseInterface, vlan_id: int, name: (None | str) = None
-    ):
+    def create_vlan_subif(self, interface, vlan_id, name=None):
+        """
+        Creates a new subinterface on the router associated with a VLAN
+
+        Parameters
+        ----------
+        interface: BaseInterface
+            parent interface on the router
+        vlan_id: int
+        name: (None | str)
+            name of the subinterface, if None, set to parent_interface.vlan_id
+        """
         if name is None:
             name = f"{interface.name}.{vlan_id}"
-        engine.exec_subprocess(
-            f"ip netns exec {self._id} ip link add link {interface.id} name {interface.id}.{vlan_id} type vlan id {vlan_id}"
-        )
+
+        engine.create_vlan_subinterface(self.id, interface, name, vlan_id)
 
         dev = VlanEnd(name, self.id)
         vlan_if = BaseInterface(name, dev)

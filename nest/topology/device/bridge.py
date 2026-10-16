@@ -41,11 +41,13 @@ class Bridge(Device):
         super().__init__(name, node_id)
 
     def enable_vlan_filtering(self):
-        engine.exec_subprocess(
-            f"ip netns exec {self.node_id} ip link set dev {self.node_id} type bridge vlan_filtering 1"
-        )
+        """
+        Enables VLAN filtering on the bridge
+        """
+        engine.set_vlan_filtering(self.node_id, True)
 
     def disable_vlan_filtering(self):
-        engine.exec_subprocess(
-            f"ip netns exec {self.node_id} ip link set dev {self.node_id} type bridge vlan_filtering 0"
-        )
+        """
+        Disables VLAN filtering on the bridge
+        """
+        engine.set_vlan_filtering(self.node_id, False)
