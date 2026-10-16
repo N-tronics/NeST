@@ -26,3 +26,4 @@ from .uname import *
 from .arp import *
 from .mptcp import *
 from .traceroute import *
+from .bridge_tool import *
