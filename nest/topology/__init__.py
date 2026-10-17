@@ -24,7 +24,7 @@ from .interface import Interface
 from .node import Node
 from .router import Router
 from .switch import Switch
-
+from .l3switch import L3Switch
 # pylint: disable=cyclic-import
 from .connect import connect
 
