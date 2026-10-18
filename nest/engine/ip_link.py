@@ -5,8 +5,6 @@
 
 import logging
 
-from nest.topology.interface.base_interface import BaseInterface
-
 from .exec import exec_subprocess
 
 logger = logging.getLogger(__name__)
