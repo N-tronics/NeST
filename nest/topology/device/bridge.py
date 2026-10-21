@@ -6,6 +6,7 @@
 import logging
 
 from nest import engine
+
 from .device import Device
 
 logger = logging.getLogger(__name__)
@@ -38,3 +39,15 @@ class Bridge(Device):
         engine.create_switch(node_id, node_id)
         engine.set_switch_mode(node_id, "up")
         super().__init__(name, node_id)
+
+    def enable_vlan_filtering(self):
+        """
+        Enables VLAN filtering on the bridge
+        """
+        engine.set_vlan_filtering(self.node_id, True)
+
+    def disable_vlan_filtering(self):
+        """
+        Disables VLAN filtering on the bridge
+        """
+        engine.set_vlan_filtering(self.node_id, False)

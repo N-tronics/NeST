@@ -8,7 +8,6 @@ from time import sleep
 from nest import config
 import nest.global_variables as g_var
 from nest.topology_map import TopologyMap
-from nest.engine.ipv6_states import check_ipv6_states
 
 
 def ipv6_dad_check(func):
@@ -33,6 +32,7 @@ def ipv6_dad_check(func):
         func
             Function to be executed after wrapper is executed
         """
+        from nest.engine.ipv6_states import check_ipv6_states
 
         if (
             g_var.IS_IPV6 is True

@@ -27,3 +27,5 @@ build/
 *.m4s
 *.mpd
 *mpeg-dash-encoded-chunks*
+
+test/

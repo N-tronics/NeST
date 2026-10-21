@@ -23,6 +23,8 @@ class Switch(Node, BaseInterface):
         User given name for the switch.
     """
 
+    DEFAULT_VLAN = 1
+
     def __init__(self, name):
         """
         Create a switch with given `name` inside a 'Node'.
@@ -40,6 +42,7 @@ class Switch(Node, BaseInterface):
         Node.__init__(self, name)
         _bridge = Bridge(name, self._id)
         BaseInterface.__init__(self, name, _bridge)
+        # _bridge.enable_vlan_filtering()
 
     def _add_interface(self, interface: BaseInterface):
         """
@@ -52,3 +55,47 @@ class Switch(Node, BaseInterface):
         """
         super()._add_interface(interface)
         engine.add_int_to_switch(self.id, interface.id)
+
+    def add_vlan_tag(self, interface, vlan_id, access):
+        """
+        Assign a VLAN ID to `interface`
+
+        Parameters
+        ----------
+        interface: Interface
+            `Interface` to be assigned
+        vlan_id: int
+            vlan id
+        access: bool
+            If True, the interface will be an access port, other wise a trunk port
+        """
+        engine.add_vlan_tag_to_if(self.id, interface, vlan_id, access)
+
+    def rem_vlan_tag(self, interface, vlan_id):
+        """
+        Removes an interface from a VLAN
+
+        Parameters
+        ----------
+        interface: BaseInterface
+        vlan_id: int
+        """
+        engine.rem_vlan_tag_from_if(self.id, interface, vlan_id)
+
+    def enable_vlan_filtering(self):
+        """
+        Enables VLAN filtering on the Switch
+
+        Parameters
+        ----------
+        """
+        self._device.enable_vlan_filtering()
+
+    def disable_vlan_filtering(self):
+        """
+        Disables VLAN filtering on the Switch
+
+        Parameters
+        ----------
+        """
+        self._device.disable_vlan_filtering()

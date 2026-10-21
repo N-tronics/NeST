@@ -4,6 +4,7 @@
 """IP link commands"""
 
 import logging
+
 from .exec import exec_subprocess
 
 logger = logging.getLogger(__name__)
@@ -196,3 +197,33 @@ def set_mtu_interface(ns_name, dev_name, mtu_value):
         logger.error(
             "MTU of interface %s wasn't set to %s!", str(dev_name), str(mtu_value)
         )
+
+
+def set_vlan_filtering(ns_name, state):
+    """
+    Set the state of the VLAN filtering
+
+    Parameters
+    ----------
+    ns_name : str
+    state: bool
+    """
+    exec_subprocess(
+        f"ip netns exec {ns_name} ip link set dev {ns_name} type bridge vlan_filtering {int(state)}"
+    )
+
+
+def create_vlan_subinterface(ns_name, parent_interface, new_interface, vlan_id):
+    """
+    Creates a new VLAN sub interface from a parent interface
+
+    Parameters
+    ----------
+    ns_name: str
+    parent_interface: BaseInterface
+    new_interface: str
+    vlan_id: str
+    """
+    exec_subprocess(
+        f"ip netns exec {ns_name} ip link add link {parent_interface.id} name {new_interface} type vlan id {vlan_id}"
+    )
