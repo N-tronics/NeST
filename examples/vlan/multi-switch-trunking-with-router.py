@@ -38,6 +38,8 @@ h3 = Node("h3")
 # Create two VLAN-aware switches, `s1` and `s2`.
 s1 = Switch("s1")
 s2 = Switch("s2")
+s1.enable_vlan_filtering()
+s2.enable_vlan_filtering()
 
 # Create a router `r1` to route between the VLANs.
 r1 = Router("r1")

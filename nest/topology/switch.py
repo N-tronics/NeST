@@ -42,7 +42,7 @@ class Switch(Node, BaseInterface):
         Node.__init__(self, name)
         _bridge = Bridge(name, self._id)
         BaseInterface.__init__(self, name, _bridge)
-        _bridge.enable_vlan_filtering()
+        # _bridge.enable_vlan_filtering()
 
     def _add_interface(self, interface: BaseInterface):
         """
@@ -81,3 +81,21 @@ class Switch(Node, BaseInterface):
         vlan_id: int
         """
         engine.rem_vlan_tag_from_if(self.id, interface, vlan_id)
+
+    def enable_vlan_filtering(self):
+        """
+        Enables VLAN filtering on the Switch
+
+        Parameters
+        ----------
+        """
+        self._device.enable_vlan_filtering()
+
+    def disable_vlan_filtering(self):
+        """
+        Disables VLAN filtering on the Switch
+
+        Parameters
+        ----------
+        """
+        self._device.disable_vlan_filtering()

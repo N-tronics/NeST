@@ -36,6 +36,7 @@ h2 = Node("h2")
 # Create a switch `s1`. A `Switch` is a VLAN-aware bridge, so VLAN
 # membership can be configured on each of its ports.
 s1 = Switch("s1")
+s1.enable_vlan_filtering()
 
 # Create a router `r1`. A `Router` is a node that forwards IP packets
 # between its interfaces.
