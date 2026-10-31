@@ -87,7 +87,12 @@ class RoutingDaemonBase(ABC):
         self.conf = io.StringIO()
         self.router_ns_id = router_ns_id
         self.conf_file = f"{conf_dir}/{self.router_ns_id}_{daemon}.conf"
-        self.pid_file = f"{conf_dir}/{self.router_ns_id}_{daemon}.pid"
+        routing_suite = config.get_value("routing_suite")
+        runtime_dir = f"/run/{routing_suite}"
+        if routing_suite != "bird" and os.path.isdir(runtime_dir):
+            self.pid_file = f"{runtime_dir}/{self.router_ns_id}_{daemon}.pid"
+        else:
+            self.pid_file = f"{conf_dir}/{self.router_ns_id}_{daemon}.pid"
         self.socket_file = None
         if config.get_value("routing_suite") == "bird":
             self.socket_file = f"{conf_dir}/{self.router_ns_id}_{daemon}.ctl"
@@ -135,7 +140,12 @@ class RoutingDaemonBase(ABC):
             if config.get_value("routing_suite") == "bird":
                 shutil.chown(self.conf_file, user=pwd.getpwuid(os.getuid())[0])
             else:
-                shutil.chown(self.conf_file, user=config.get_value("routing_suite"))
+                routing_user = config.get_value("routing_suite")
+                shutil.chown(
+                    self.conf_file,
+                    user=routing_user,
+                    group=routing_user,
+                )
             self.conf.seek(0)
             shutil.copyfileobj(self.conf, conf)
 

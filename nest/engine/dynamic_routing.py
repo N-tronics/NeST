@@ -31,7 +31,7 @@ def run_zebra(ns_id, conf_file, pid_file):
     else:
         cmd = f"ip netns exec {ns_id} zebra --config_file {conf_file} \
                 --pid_file {pid_file} --retain --daemon"
-    exec_subprocess(cmd)
+    exec_subprocess(cmd, detach=True)
 
 
 def run_ripd(ns_id, conf_file, pid_file, ipv6, **kwargs):
@@ -51,11 +51,11 @@ def run_ripd(ns_id, conf_file, pid_file, ipv6, **kwargs):
     if config.get_value("routing_suite") == "frr":
         if ipv6:
             cmd = f"ip netns exec {ns_id} {FRR_DAEMONPATH}ripngd --config_file {conf_file} \
-                    --pid_file {pid_file} --daemon -N {ns_id}"
+                    --pid_file {pid_file} --vrfwnetns --daemon -N {ns_id}"
         else:
             cmd = (
                 f"ip netns exec {ns_id} {FRR_DAEMONPATH}ripd --config_file {conf_file} \
-                    --pid_file {pid_file} --daemon -N {ns_id}"
+                    --pid_file {pid_file} --vrfwnetns --daemon -N {ns_id}"
             )
     elif config.get_value("routing_suite") == "bird":
         if config.get_value("routing_logs"):
@@ -71,7 +71,7 @@ def run_ripd(ns_id, conf_file, pid_file, ipv6, **kwargs):
         else:
             cmd = f"ip netns exec {ns_id} ripd --config_file {conf_file} \
                     --pid_file {pid_file} --retain --daemon"
-    exec_subprocess(cmd)
+    exec_subprocess(cmd, detach=True)
 
 
 def run_ospfd(ns_id, conf_file, pid_file, ipv6, **kwargs):
@@ -90,10 +90,10 @@ def run_ospfd(ns_id, conf_file, pid_file, ipv6, **kwargs):
     if config.get_value("routing_suite") == "frr":
         if ipv6:
             cmd = f"ip netns exec {ns_id} {FRR_DAEMONPATH}ospf6d --config_file {conf_file} \
-                --pid_file {pid_file} --daemon -N {ns_id}"
+                --pid_file {pid_file} --vrfwnetns --daemon -N {ns_id}"
         else:
             cmd = f"ip netns exec {ns_id} {FRR_DAEMONPATH}ospfd --config_file {conf_file} \
-                --pid_file {pid_file} --daemon -N {ns_id}"
+                --pid_file {pid_file} --vrfwnetns --daemon -N {ns_id}"
     elif config.get_value("routing_suite") == "bird":
         if config.get_value("routing_logs"):
             cmd = f"ip netns exec {ns_id} bird -c {conf_file} -P {pid_file} \
@@ -108,7 +108,7 @@ def run_ospfd(ns_id, conf_file, pid_file, ipv6, **kwargs):
         else:
             cmd = f"ip netns exec {ns_id} ospfd --config_file {conf_file} \
                 --pid_file {pid_file} --daemon"
-    exec_subprocess(cmd)
+    exec_subprocess(cmd, detach=True)
 
 
 def run_isisd(ns_id, conf_file, pid_file):
@@ -126,11 +126,11 @@ def run_isisd(ns_id, conf_file, pid_file):
     """
     if config.get_value("routing_suite") == "frr":
         cmd = f"ip netns exec {ns_id} {FRR_DAEMONPATH}isisd --config_file {conf_file} \
-            --pid_file {pid_file} --daemon -N {ns_id}"
+            --pid_file {pid_file} --vrfwnetns --daemon -N {ns_id}"
     else:
         cmd = f"ip netns exec {ns_id} isisd --config_file {conf_file} \
             --pid_file {pid_file} --daemon"
-    exec_subprocess(cmd)
+    exec_subprocess(cmd, detach=True)
 
 
 def run_ldpd(ns_id, conf_file, pid_file):
@@ -149,8 +149,8 @@ def run_ldpd(ns_id, conf_file, pid_file):
     """
     if config.get_value("routing_suite") == "frr":
         cmd = f"ip netns exec {ns_id} /usr/lib/frr/ldpd --config_file {conf_file} \
-            --pid_file {pid_file} --daemon -N {ns_id}"
-        exec_subprocess(cmd)
+            --pid_file {pid_file} --vrfwnetns --daemon -N {ns_id}"
+        exec_subprocess(cmd, detach=True)
     else:
         raise RuntimeError("Ldp requires Frrouting")
 

@@ -51,4 +51,4 @@ class Switch(Node, BaseInterface):
             `Interface` to be added to `Switch`
         """
         super()._add_interface(interface)
-        engine.add_int_to_switch(self.id, interface.id)
+        engine.add_int_to_switch(self._device.id, interface.id, self._id)

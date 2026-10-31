@@ -181,10 +181,11 @@ class RoutingHelper:
             logger.warning("{dir_path} already exists")
         else:
             mkdir(dir_path)
-            if config.get_value("routing_suite") == "bird":
-                chown(dir_path, user=pwd.getpwuid(os.getuid())[0])
-            else:
-                chown(dir_path, user=config.get_value("routing_suite"))
+        if config.get_value("routing_suite") == "bird":
+            chown(dir_path, user=pwd.getpwuid(os.getuid())[0])
+        else:
+            routing_user = config.get_value("routing_suite")
+            chown(dir_path, user=routing_user, group=routing_user)
 
     def _create_conf_directory(self):
         """
@@ -233,13 +234,19 @@ class RoutingHelper:
                         router.add_route(interface.pair.get_address(), interface)
         else:
             for host in self.hosts:
-                host.add_route(
-                    "DEFAULT",
-                    host.interfaces[0],
-                    host.interfaces[0].pair.get_address(
-                        not self.ipv6_routing, self.ipv6_routing, True
-                    )[0],
+                host_interface = host.interfaces[0]
+                peer_addresses = host_interface.pair.get_address(
+                    not self.ipv6_routing,
+                    self.ipv6_routing,
+                    True,
                 )
+
+                # A host connected to an L3 switch has a physical switch-port
+                # as its peer. The gateway address is on the VLAN SVI, not on
+                # that switch-port. In that case the route is expected to be
+                # configured explicitly by the topology author.
+                if peer_addresses:
+                    host.add_route("DEFAULT", host_interface, peer_addresses[0])
 
     def _run_dyn_routing_bird(self):
         """
@@ -341,10 +348,16 @@ class RoutingHelper:
         """
         logger.info("Waiting for %s to converge", self.protocol)
         interval = 2
+        timeout = 60
+        start_time = time.monotonic()
         converged = False
         # Ping between hosts until convergence
         while not converged:
             time.sleep(interval)
+            if time.monotonic() - start_time >= timeout:
+                raise RuntimeError(
+                    f"{self.protocol} did not converge within {timeout} seconds"
+                )
             converged = True
             for i in range(len(self.hosts)):
                 for j in range(i + 1, len(self.hosts)):
@@ -353,7 +366,11 @@ class RoutingHelper:
                         .interfaces[0]
                         .get_address(not self.ipv6_routing, self.ipv6_routing, True)
                     ):
-                        if not self.hosts[i].ping(k_addr.get_addr(), verbose=0):
+                        # Keep the subnet information so Node.ping can resolve
+                        # the destination through TopologyMap. Passing only the
+                        # address string loses the prefix and causes a false
+                        # "destination node resolution failed" warning.
+                        if not self.hosts[i].ping(k_addr, verbose=0):
                             converged = False
                             break
                     if not converged:
@@ -390,7 +407,7 @@ class RoutingHelper:
                     pid = int(pid_file.read())
                     try:
                         kill(pid, SIGTERM)
-                    except ProcessLookupError:
+                    except (ProcessLookupError, PermissionError):
                         pass
 
         # Stop zebra processes
@@ -400,7 +417,7 @@ class RoutingHelper:
                     pid = int(pid_file.read())
                     try:
                         kill(pid, SIGTERM)
-                    except ProcessLookupError:
+                    except (ProcessLookupError, PermissionError):
                         pass
 
         # Stop protocol processes
@@ -410,7 +427,7 @@ class RoutingHelper:
                     pid = int(pid_file.read())
                     try:
                         kill(pid, SIGTERM)
-                    except ProcessLookupError:
+                    except (ProcessLookupError, PermissionError):
                         pass
 
         # Delete config directory

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 # pylint: disable=inconsistent-return-statements
-def exec_subprocess(cmd, shell=False, output=False):
+def exec_subprocess(cmd, shell=False, output=False, detach=False):
     """
     Executes a command
 
@@ -26,6 +26,10 @@ def exec_subprocess(cmd, shell=False, output=False):
         (Default value = False)
     output : boolean
         True if the output of the `cmd` is to be returned
+        (Default value = False)
+    detach : boolean
+        True when the command starts a daemon. Standard streams are detached
+        so a daemonized child cannot keep ``communicate()`` waiting forever.
         (Default value = False)
 
     Returns
@@ -42,7 +46,15 @@ def exec_subprocess(cmd, shell=False, output=False):
     if shell is False:
         temp_cmd = cmd.split()
 
-    with Popen(temp_cmd, stdout=PIPE, stderr=PIPE, shell=shell) as proc:
+    stdout_pipe = subprocess.DEVNULL if detach else PIPE
+    stderr_pipe = subprocess.DEVNULL if detach else PIPE
+    with Popen(
+        temp_cmd,
+        stdout=stdout_pipe,
+        stderr=stderr_pipe,
+        shell=shell,
+        start_new_session=detach,
+    ) as proc:
 
         stdout, _ = proc.communicate()
         logger.trace(cmd)

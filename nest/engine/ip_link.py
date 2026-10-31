@@ -9,6 +9,16 @@ from .exec import exec_subprocess
 logger = logging.getLogger(__name__)
 
 
+def _run_link_command(command, operation, check=False):
+    """Run a link command and optionally raise on failure."""
+    exit_code = exec_subprocess(command)
+    if check and exit_code != 0:
+        raise RuntimeError(
+            f"Engine operation failed with exit code {exit_code}: {operation}"
+        )
+    return exit_code
+
+
 def create_switch(ns_name, s_name):
     """
     Create switch if it doesn't already exist.
@@ -38,21 +48,26 @@ def delete_switch(ns_name, s_name):
     exec_subprocess(f"ip netns exec {ns_name} ip link del {s_name}")
 
 
-def set_switch_mode(s_name, mode):
+def set_switch_mode(ns_name, mode, bridge_name=None):
     """
     Set switch mode
 
     Parameters
     ----------
-    s_name : str
-        switch name
+    ns_name : str
+        namespace name
     mode : str
         'up' or 'down'
+    bridge_name : str, optional
+        Linux bridge name. Defaults to ``ns_name`` for compatibility.
     """
-    exec_subprocess(f"ip netns exec {s_name} ip link set dev {s_name} {mode}")
+    bridge_name = bridge_name or ns_name
+    exec_subprocess(
+        f"ip netns exec {ns_name} ip link set dev {bridge_name} {mode}"
+    )
 
 
-def add_int_to_switch(s_name, dev_name):
+def add_int_to_switch(s_name, dev_name, ns_name=None):
     """
     Add interface to a switch
 
@@ -62,8 +77,14 @@ def add_int_to_switch(s_name, dev_name):
         switch name
     dev_name : str
         interface name
+    ns_name : str, optional
+        Namespace containing the bridge. Defaults to ``s_name`` for
+        compatibility.
     """
-    exec_subprocess(f"ip netns exec {s_name} ip link set {dev_name} master {s_name}")
+    ns_name = ns_name or s_name
+    exec_subprocess(
+        f"ip netns exec {ns_name} ip link set {dev_name} master {s_name}"
+    )
 
 
 def create_veth(dev_name1, dev_name2):
@@ -159,7 +180,7 @@ def setup_ifb(ns_name, dev_name):
     set_int_up(ns_name, dev_name)
 
 
-def set_interface_mode(ns_name, dev_name, mode):
+def set_interface_mode(ns_name, dev_name, mode, check=False):
     """
     Set interface mode up or down
 
@@ -170,7 +191,88 @@ def set_interface_mode(ns_name, dev_name, mode):
     mode : str
         'up' or 'down'
     """
-    exec_subprocess(f"ip netns exec {ns_name} ip link set dev {dev_name} {mode}")
+    return _run_link_command(
+        f"ip netns exec {ns_name} ip link set dev {dev_name} {mode}",
+        f"set interface {dev_name} {mode}",
+        check,
+    )
+
+
+def create_vlan_interface(ns_name, parent_name, dev_name, vlan_id, check=False):
+    """Create a VLAN interface inside a network namespace.
+
+    Returns the command exit code so callers can keep Python state in sync
+    with the kernel state.
+    """
+    return _run_link_command(
+        f"ip netns exec {ns_name} ip link add link {parent_name} "
+        f"name {dev_name} type vlan id {vlan_id}",
+        f"create VLAN interface {dev_name} (VLAN {vlan_id})",
+        check,
+    )
+
+
+def delete_interface(ns_name, dev_name, check=False):
+    """Delete a network interface from a network namespace."""
+    return _run_link_command(
+        f"ip netns exec {ns_name} ip link delete {dev_name}",
+        f"delete interface {dev_name}",
+        check,
+    )
+
+
+def set_bridge_vlan_filtering(ns_name, bridge_name, enabled=True, check=False):
+    """Enable or disable VLAN filtering on a Linux bridge."""
+    value = 1 if enabled else 0
+    return _run_link_command(
+        f"ip netns exec {ns_name} ip link set dev {bridge_name} "
+        f"type bridge vlan_filtering {value}",
+        f"set VLAN filtering on bridge {bridge_name} to {value}",
+        check,
+    )
+
+
+def add_bridge_vlan(
+    ns_name,
+    dev_name,
+    vlan_id,
+    *,
+    self_port=False,
+    pvid=False,
+    untagged=False,
+    check=False,
+):
+    """Add VLAN membership to a Linux bridge device or bridge port."""
+    flags = []
+    if self_port:
+        flags.append("self")
+    if pvid:
+        flags.append("pvid")
+    if untagged:
+        flags.append("untagged")
+    suffix = " ".join(flags)
+    command = (
+        f"ip netns exec {ns_name} bridge vlan add dev {dev_name} "
+        f"vid {vlan_id}"
+    )
+    if suffix:
+        command += f" {suffix}"
+    return _run_link_command(
+        command,
+        f"add VLAN {vlan_id} to {dev_name}",
+        check,
+    )
+
+
+def delete_bridge_vlan(ns_name, dev_name, vlan_id, *, self_port=False, check=False):
+    """Delete VLAN membership from a Linux bridge device or bridge port."""
+    suffix = " self" if self_port else ""
+    return _run_link_command(
+        f"ip netns exec {ns_name} bridge vlan del dev {dev_name} "
+        f"vid {vlan_id}{suffix}",
+        f"delete VLAN {vlan_id} from {dev_name}",
+        check,
+    )
 
 
 def set_mtu_interface(ns_name, dev_name, mtu_value):

@@ -8,3 +8,4 @@ which will be used by NeST users.
 
 from .base_interface import BaseInterface
 from .interface import Interface, create_veth_pair
+from .svi import SVI
